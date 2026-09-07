@@ -8,6 +8,7 @@ const mostrarModal = ref(false)
 const editando = ref(false)
 const idEditando = ref(null)
 const error = ref([])
+const fechaMinima = new Date().toISOString().split('T')[0]
 
 const formulario = ref({
   nombre: '',
@@ -61,7 +62,6 @@ function actualizarPrecio() {
 
   formulario.value.precio = precios[formulario.value.servicio] || ''
 }
-
 function validarFormulario() {
   const errores = []
 
@@ -104,6 +104,43 @@ function validarFormulario() {
     errores.push('Seleccione el estado del pago.')
   }
 
+
+
+  if (formulario.value.fecha !== '') {
+    const ahora = new Date()
+
+    const año = ahora.getFullYear()
+    const mes = String(ahora.getMonth() + 1).padStart(2, '0')
+    const dia = String(ahora.getDate()).padStart(2, '0')
+
+    const fechaHoy = `${año}-${mes}-${dia}`
+
+   
+    if (formulario.value.fecha < fechaHoy) {
+      errores.push(
+        'La fecha del servicio no puede ser anterior al día de hoy.'
+      )
+    }
+
+   
+    if (
+      formulario.value.fecha === fechaHoy &&
+      formulario.value.hora !== ''
+    ) {
+      const horaActual =
+        String(ahora.getHours()).padStart(2, '0') +
+        ':' +
+        String(ahora.getMinutes()).padStart(2, '0')
+
+      if (formulario.value.hora <= horaActual) {
+        errores.push(
+          'La hora seleccionada ya pasó. Ingrese una hora posterior a la hora actual.'
+        )
+      }
+    }
+  }
+
+
   if (
     formulario.value.hora !== '' &&
     (
@@ -111,7 +148,9 @@ function validarFormulario() {
       formulario.value.hora > '20:00'
     )
   ) {
-    errores.push('La hora del servicio debe estar entre las 6:00 AM y las 8:00 PM.')
+    errores.push(
+      'La hora del servicio debe estar entre las 6:00 AM y las 8:00 PM.'
+    )
   }
 
   error.value = errores
@@ -658,11 +697,12 @@ function claseCalificacion(calificacion) {
             <div class="campo">
               <label>Fecha *</label>
 
-              <input
-                v-model="formulario.fecha"
-                type="date"
-                :class="{ 'campo-error': campoInvalido('fecha') }"
-              >
+             <input
+              v-model="formulario.fecha"
+              type="date"
+              :min="fechaMinima"
+              :class="{ 'campo-error': campoInvalido('fecha') }"
+            >
             </div>
 
             <div class="campo">
