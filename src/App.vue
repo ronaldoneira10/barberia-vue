@@ -7,7 +7,7 @@ const servicios = useLocalStorage('servicios-barberia', [])
 const mostrarModal = ref(false)
 const editando = ref(false)
 const idEditando = ref(null)
-const error = ref('')
+const error = ref([])
 
 const formulario = ref({
   nombre: '',
@@ -25,7 +25,7 @@ const formulario = ref({
 function abrirModal() {
   editando.value = false
   idEditando.value = null
-  error.value = ''
+  error.value = []
 
   formulario.value = {
     nombre: '',
@@ -45,7 +45,7 @@ function abrirModal() {
 
 function cerrarModal() {
   mostrarModal.value = false
-  error.value = ''
+  error.value = []
 }
 
 
@@ -62,68 +62,69 @@ function actualizarPrecio() {
   formulario.value.precio = precios[formulario.value.servicio] || ''
 }
 
-
 function validarFormulario() {
+  const errores = []
+
   if (formulario.value.nombre.trim() === '') {
-    error.value = 'Ingrese el nombre del cliente.'
-    return false
+    errores.push('Ingrese el nombre del cliente.')
   }
 
   if (formulario.value.servicio === '') {
-    error.value = 'Seleccione el tipo de servicio.'
-    return false
+    errores.push('Seleccione el tipo de servicio que desea tomar.')
   }
 
   if (formulario.value.barbero === '') {
-    error.value = 'Seleccione el barbero.'
-    return false
+    errores.push('Seleccione el barbero que realizará el servicio.')
   }
 
   if (formulario.value.fecha === '') {
-    error.value = 'Seleccione una fecha.'
-    return false
+    errores.push('Ingrese la fecha del día en que tomará el servicio.')
   }
 
   if (formulario.value.hora === '') {
-    error.value = 'Seleccione una hora.'
-    return false
+    errores.push('Ingrese la hora en que tomará el servicio.')
   }
 
   if (formulario.value.precio === '') {
-    error.value = 'Ingrese el precio del servicio.'
-    return false
-  }
-
-  if (Number(formulario.value.precio) <= 0) {
-    error.value = 'El precio debe ser mayor que 0.'
-    return false
-  }
-
-  if (formulario.value.metodoPago === '') {
-    error.value = 'Seleccione el método de pago.'
-    return false
-  }
-
-  if (formulario.value.estadoPago === '') {
-    error.value = 'Seleccione el estado del pago.'
-    return false
+    errores.push('El precio del servicio es obligatorio.')
   }
 
   if (
-    formulario.value.hora < '06:00' ||
-    formulario.value.hora > '20:00'
+    formulario.value.precio !== '' &&
+    Number(formulario.value.precio) <= 0
   ) {
-    error.value = 'La hora debe estar entre las 6:00 AM y las 8:00 PM.'
-    return false
+    errores.push('El precio del servicio debe ser mayor que 0.')
   }
 
-  return true
+  if (formulario.value.metodoPago === '') {
+    errores.push('Seleccione el método de pago.')
+  }
+
+  if (formulario.value.estadoPago === '') {
+    errores.push('Seleccione el estado del pago.')
+  }
+
+  if (
+    formulario.value.hora !== '' &&
+    (
+      formulario.value.hora < '06:00' ||
+      formulario.value.hora > '20:00'
+    )
+  ) {
+    errores.push('La hora del servicio debe estar entre las 6:00 AM y las 8:00 PM.')
+  }
+
+  error.value = errores
+
+  return errores.length === 0
 }
 
 
 
+
+
 function campoInvalido(campo) {
-  if (error.value === '') {
+  if (error.value.length === 0) {
     return false
   }
 
@@ -148,7 +149,10 @@ function campoInvalido(campo) {
   }
 
   if (campo === 'precio') {
-    return formulario.value.precio === ''
+    return (
+      formulario.value.precio === '' ||
+      Number(formulario.value.precio) <= 0
+    )
   }
 
   if (campo === 'metodoPago') {
@@ -165,7 +169,7 @@ function campoInvalido(campo) {
 
 
 function guardarServicio() {
-  error.value = ''
+  error.value = []
 
   if (!validarFormulario()) {
     return
@@ -213,7 +217,7 @@ function guardarServicio() {
 function editarServicio(servicio) {
   editando.value = true
   idEditando.value = servicio.id
-  error.value = ''
+  error.value = []
 
   formulario.value = {
     nombre: servicio.nombre,
@@ -570,10 +574,15 @@ function claseCalificacion(calificacion) {
         </div>
 
         <div
-          v-if="error"
+          v-if="error.length > 0"
           class="mensaje-error"
         >
-          ⚠️ {{ error }}
+          <div
+            v-for="(mensaje, index) in error"
+            :key="index"
+          >
+            ⚠️ {{ mensaje }}
+          </div>
         </div>
 
         <form @submit.prevent="guardarServicio">
