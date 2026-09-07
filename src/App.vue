@@ -63,19 +63,34 @@ function actualizarPrecio() {
 }
 
 
-
 function validarFormulario() {
-  if (
-    formulario.value.nombre.trim() === '' ||
-    formulario.value.servicio.trim() === '' ||
-    formulario.value.barbero.trim() === '' ||
-    formulario.value.fecha === '' ||
-    formulario.value.hora === '' ||
-    formulario.value.precio === '' ||
-    formulario.value.metodoPago.trim() === '' ||
-    formulario.value.estadoPago.trim() === ''
-  ) {
-    error.value = 'Complete todos los campos obligatorios.'
+  if (formulario.value.nombre.trim() === '') {
+    error.value = 'Ingrese el nombre del cliente.'
+    return false
+  }
+
+  if (formulario.value.servicio === '') {
+    error.value = 'Seleccione el tipo de servicio.'
+    return false
+  }
+
+  if (formulario.value.barbero === '') {
+    error.value = 'Seleccione el barbero.'
+    return false
+  }
+
+  if (formulario.value.fecha === '') {
+    error.value = 'Seleccione una fecha.'
+    return false
+  }
+
+  if (formulario.value.hora === '') {
+    error.value = 'Seleccione una hora.'
+    return false
+  }
+
+  if (formulario.value.precio === '') {
+    error.value = 'Ingrese el precio del servicio.'
     return false
   }
 
@@ -84,11 +99,21 @@ function validarFormulario() {
     return false
   }
 
+  if (formulario.value.metodoPago === '') {
+    error.value = 'Seleccione el método de pago.'
+    return false
+  }
+
+  if (formulario.value.estadoPago === '') {
+    error.value = 'Seleccione el estado del pago.'
+    return false
+  }
+
   if (
     formulario.value.hora < '06:00' ||
     formulario.value.hora > '20:00'
   ) {
-    error.value = 'El horario de atención es de 6:00 AM a 8:00 PM.'
+    error.value = 'La hora debe estar entre las 6:00 AM y las 8:00 PM.'
     return false
   }
 
