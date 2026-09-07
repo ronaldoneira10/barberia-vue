@@ -66,14 +66,14 @@ function actualizarPrecio() {
 
 function validarFormulario() {
   if (
-    formulario.value.nombre === '' ||
-    formulario.value.servicio === '' ||
-    formulario.value.barbero === '' ||
+    formulario.value.nombre.trim() === '' ||
+    formulario.value.servicio.trim() === '' ||
+    formulario.value.barbero.trim() === '' ||
     formulario.value.fecha === '' ||
     formulario.value.hora === '' ||
     formulario.value.precio === '' ||
-    formulario.value.metodoPago === '' ||
-    formulario.value.estadoPago === ''
+    formulario.value.metodoPago.trim() === '' ||
+    formulario.value.estadoPago.trim() === ''
   ) {
     error.value = 'Complete todos los campos obligatorios.'
     return false
@@ -84,7 +84,6 @@ function validarFormulario() {
     return false
   }
 
-
   if (
     formulario.value.hora < '06:00' ||
     formulario.value.hora > '20:00'
@@ -93,11 +92,52 @@ function validarFormulario() {
     return false
   }
 
-
-
-
   return true
 }
+
+
+
+function campoInvalido(campo) {
+  if (error.value === '') {
+    return false
+  }
+
+  if (campo === 'nombre') {
+    return formulario.value.nombre.trim() === ''
+  }
+
+  if (campo === 'servicio') {
+    return formulario.value.servicio === ''
+  }
+
+  if (campo === 'barbero') {
+    return formulario.value.barbero === ''
+  }
+
+  if (campo === 'fecha') {
+    return formulario.value.fecha === ''
+  }
+
+  if (campo === 'hora') {
+    return formulario.value.hora === ''
+  }
+
+  if (campo === 'precio') {
+    return formulario.value.precio === ''
+  }
+
+  if (campo === 'metodoPago') {
+    return formulario.value.metodoPago === ''
+  }
+
+  if (campo === 'estadoPago') {
+    return formulario.value.estadoPago === ''
+  }
+
+  return false
+}
+
+
 
 function guardarServicio() {
   error.value = ''
@@ -522,6 +562,7 @@ function claseCalificacion(calificacion) {
                 v-model="formulario.nombre"
                 type="text"
                 placeholder="Ej: Juan Pérez"
+                :class="{ 'campo-error': campoInvalido('nombre') }"
               >
             </div>
 
@@ -531,6 +572,7 @@ function claseCalificacion(calificacion) {
               <select
                 v-model="formulario.servicio"
                 @change="actualizarPrecio"
+                :class="{ 'campo-error': campoInvalido('servicio') }"
               >
                 <option value="">Seleccione</option>
 
@@ -563,7 +605,9 @@ function claseCalificacion(calificacion) {
             <div class="campo">
               <label>Barbero *</label>
 
-              <select v-model="formulario.barbero">
+              <select v-model="formulario.barbero"
+              :class="{ 'campo-error': campoInvalido('barbero') }"
+              >
                 <option value="">Seleccione</option>
                 <option value="Don Ramiro">
                   Don Ramiro
@@ -583,6 +627,7 @@ function claseCalificacion(calificacion) {
               <input
                 v-model="formulario.fecha"
                 type="date"
+                :class="{ 'campo-error': campoInvalido('fecha') }"
               >
             </div>
 
@@ -594,6 +639,7 @@ function claseCalificacion(calificacion) {
                 type="time"
                 min="06:00"
                 max="20:00"
+                :class="{ 'campo-error': campoInvalido('hora') }"
               >
             </div>
 
@@ -605,13 +651,16 @@ function claseCalificacion(calificacion) {
                 type="number"
                 min="1"
                 placeholder="Ej: 20000"
+                :class="{ 'campo-error': campoInvalido('precio') }"
               >
             </div>
 
             <div class="campo">
               <label>Método de pago *</label>
 
-              <select v-model="formulario.metodoPago">
+              <select v-model="formulario.metodoPago"
+              :class="{ 'campo-error': campoInvalido('metodoPago') }"
+              >
                 <option value="">Seleccione</option>
                 <option value="Efectivo">
                   💵 Efectivo
@@ -628,7 +677,8 @@ function claseCalificacion(calificacion) {
             <div class="campo">
               <label>Estado del pago *</label>
 
-              <select v-model="formulario.estadoPago">
+              <select v-model="formulario.estadoPago"
+              :class="{ 'campo-error': campoInvalido('estadoPago') }">
                 <option value="">Seleccione</option>
                 <option value="Pagado">
                   Pagado
@@ -1189,6 +1239,15 @@ form {
 
 .boton-guardar:hover {
   background: #0f1613;
+}
+
+.campo-error {
+  border-bottom-color: #e53935 !important;
+  background: #fff0f0 !important;
+}
+
+.campo-error:focus {
+  border-bottom-color: #e53935 !important;
 }
 
 @media (max-width: 800px) {
