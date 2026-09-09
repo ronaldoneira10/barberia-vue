@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 
 const servicios = useLocalStorage('servicios-barberia', [])
@@ -8,7 +8,42 @@ const mostrarModal = ref(false)
 const editando = ref(false)
 const idEditando = ref(null)
 const error = ref([])
-const fechaMinima = new Date().toISOString().split('T')[0]
+const campoConError = ref('')
+
+const mostrarModalCalificar = ref(false)
+const servicioCalificando = ref(null)
+const calificacionSeleccionada = ref(0)
+
+const mostrarModalEliminar = ref(false)
+const idAEliminar = ref(null)
+
+function fechaHoy() {
+  const hoy = new Date()
+  const anio = hoy.getFullYear()
+  const mes = String(hoy.getMonth() + 1).padStart(2, '0')
+  const dia = String(hoy.getDate()).padStart(2, '0')
+  return `${anio}-${mes}-${dia}`
+}
+
+function horaActual() {
+  const ahora = new Date()
+  const horas = String(ahora.getHours()).padStart(2, '0')
+  const minutos = String(ahora.getMinutes()).padStart(2, '0')
+  return `${horas}:${minutos}`
+}
+
+function fechaHoraSeleccionadaEsPasada() {
+  if (formulario.value.fecha === '' || formulario.value.hora === '') {
+    return false
+  }
+
+  const seleccionada = new Date(`${formulario.value.fecha}T${formulario.value.hora}`)
+  const ahora = new Date()
+
+  return seleccionada <= ahora
+}
+
+
 
 const formulario = ref({
   nombre: '',
@@ -23,10 +58,20 @@ const formulario = ref({
   observaciones: ''
 })
 
+const fechaMinima = fechaHoy()
+
+const horaMinima = computed(() => {
+  if (formulario.value.fecha === fechaHoy()) {
+    return horaActual()
+  }
+  return '06:00'
+})
+
 function abrirModal() {
   editando.value = false
   idEditando.value = null
-  error.value = []
+  error.value = ''
+  campoConError.value = ''
 
   formulario.value = {
     nombre: '',
@@ -46,7 +91,8 @@ function abrirModal() {
 
 function cerrarModal() {
   mostrarModal.value = false
-  error.value = []
+  error.value = ''
+  campoConError.value = ''
 }
 
 
@@ -62,153 +108,104 @@ function actualizarPrecio() {
 
   formulario.value.precio = precios[formulario.value.servicio] || ''
 }
-function validarFormulario() {
-  const errores = []
 
+
+function validarFormulario() {
   if (formulario.value.nombre.trim() === '') {
-    errores.push('Ingrese el nombre del cliente.')
+    error.value = 'Ingrese el nombre del cliente.'
+    campoConError.value = 'nombre'
+    return false
+  }
+
+  if (/\d/.test(formulario.value.nombre)) {
+    error.value = 'El nombre no puede contener números.'
+    campoConError.value = 'nombre'
+    return false
   }
 
   if (formulario.value.servicio === '') {
-    errores.push('Seleccione el tipo de servicio que desea tomar.')
+    error.value = 'Seleccione el tipo de servicio.'
+    campoConError.value = 'servicio'
+    return false
   }
 
   if (formulario.value.barbero === '') {
-    errores.push('Seleccione el barbero que realizará el servicio.')
+    error.value = 'Seleccione el barbero.'
+    campoConError.value = 'barbero'
+    return false
   }
 
   if (formulario.value.fecha === '') {
-    errores.push('Ingrese la fecha del día en que tomará el servicio.')
+    error.value = 'Seleccione una fecha.'
+    campoConError.value = 'fecha'
+    return false
+  }
+
+  if (formulario.value.fecha < fechaHoy()) {
+    error.value = 'La fecha no puede ser anterior a hoy.'
+    campoConError.value = 'fecha'
+    return false
   }
 
   if (formulario.value.hora === '') {
-    errores.push('Ingrese la hora en que tomará el servicio.')
+    error.value = 'Seleccione una hora.'
+    campoConError.value = 'hora'
+    return false
   }
 
   if (formulario.value.precio === '') {
-    errores.push('El precio del servicio es obligatorio.')
+    error.value = 'Ingrese el precio del servicio.'
+    campoConError.value = 'precio'
+    return false
   }
 
-  if (
-    formulario.value.precio !== '' &&
-    Number(formulario.value.precio) <= 0
-  ) {
-    errores.push('El precio del servicio debe ser mayor que 0.')
+  if (Number(formulario.value.precio) <= 0) {
+    error.value = 'El precio debe ser mayor que 0.'
+    campoConError.value = 'precio'
+    return false
   }
 
   if (formulario.value.metodoPago === '') {
-    errores.push('Seleccione el método de pago.')
+    error.value = 'Seleccione el método de pago.'
+    campoConError.value = 'metodoPago'
+    return false
   }
 
   if (formulario.value.estadoPago === '') {
-    errores.push('Seleccione el estado del pago.')
+    error.value = 'Seleccione el estado del pago.'
+    campoConError.value = 'estadoPago'
+    return false
   }
-
-
-
-  if (formulario.value.fecha !== '') {
-    const ahora = new Date()
-
-    const año = ahora.getFullYear()
-    const mes = String(ahora.getMonth() + 1).padStart(2, '0')
-    const dia = String(ahora.getDate()).padStart(2, '0')
-
-    const fechaHoy = `${año}-${mes}-${dia}`
-
-   
-    if (formulario.value.fecha < fechaHoy) {
-      errores.push(
-        'La fecha del servicio no puede ser anterior al día de hoy.'
-      )
-    }
-
-   
-    if (
-      formulario.value.fecha === fechaHoy &&
-      formulario.value.hora !== ''
-    ) {
-      const horaActual =
-        String(ahora.getHours()).padStart(2, '0') +
-        ':' +
-        String(ahora.getMinutes()).padStart(2, '0')
-
-      if (formulario.value.hora <= horaActual) {
-        errores.push(
-          'La hora seleccionada ya pasó. Ingrese una hora posterior a la hora actual.'
-        )
-      }
-    }
-  }
-
 
   if (
-    formulario.value.hora !== '' &&
-    (
-      formulario.value.hora < '06:00' ||
-      formulario.value.hora > '20:00'
-    )
+    formulario.value.hora < '06:00' ||
+    formulario.value.hora > '20:00'
   ) {
-    errores.push(
-      'La hora del servicio debe estar entre las 6:00 AM y las 8:00 PM.'
-    )
+    error.value = 'La hora debe estar entre las 6:00 AM y las 8:00 PM.'
+    campoConError.value = 'hora'
+    return false
   }
 
-  error.value = errores
+  if (fechaHoraSeleccionadaEsPasada()) {
+    error.value = 'La hora seleccionada ya pasó. Elija una hora posterior a la actual.'
+    campoConError.value = 'hora'
+    return false
+  }
 
-  return errores.length === 0
+  campoConError.value = ''
+  return true
 }
 
 
 
-
-
 function campoInvalido(campo) {
-  if (error.value.length === 0) {
-    return false
-  }
-
-  if (campo === 'nombre') {
-    return formulario.value.nombre.trim() === ''
-  }
-
-  if (campo === 'servicio') {
-    return formulario.value.servicio === ''
-  }
-
-  if (campo === 'barbero') {
-    return formulario.value.barbero === ''
-  }
-
-  if (campo === 'fecha') {
-    return formulario.value.fecha === ''
-  }
-
-  if (campo === 'hora') {
-    return formulario.value.hora === ''
-  }
-
-  if (campo === 'precio') {
-    return (
-      formulario.value.precio === '' ||
-      Number(formulario.value.precio) <= 0
-    )
-  }
-
-  if (campo === 'metodoPago') {
-    return formulario.value.metodoPago === ''
-  }
-
-  if (campo === 'estadoPago') {
-    return formulario.value.estadoPago === ''
-  }
-
-  return false
+  return campo === campoConError.value
 }
 
 
 
 function guardarServicio() {
-  error.value = []
+  error.value = ''
 
   if (!validarFormulario()) {
     return
@@ -256,7 +253,8 @@ function guardarServicio() {
 function editarServicio(servicio) {
   editando.value = true
   idEditando.value = servicio.id
-  error.value = []
+  error.value = ''
+  campoConError.value = ''
 
   formulario.value = {
     nombre: servicio.nombre,
@@ -274,41 +272,51 @@ function editarServicio(servicio) {
   mostrarModal.value = true
 }
 
-function eliminarServicio(id) {
-  const confirmar = confirm(
-    '¿Está seguro de que desea eliminar este servicio?'
-  )
+function abrirModalEliminar(id) {
+  idAEliminar.value = id
+  mostrarModalEliminar.value = true
+}
 
-
-
-  if (confirmar === true) {
-    for (let i = 0; i < servicios.value.length; i++) {
-      if (servicios.value[i].id === id) {
-        servicios.value.splice(i, 1)
-        break
-      }
+function confirmarEliminacion() {
+  for (let i = 0; i < servicios.value.length; i++) {
+    if (servicios.value[i].id === idAEliminar.value) {
+      servicios.value.splice(i, 1)
+      break
     }
   }
+
+  cerrarModalEliminar()
+}
+
+function cerrarModalEliminar() {
+  mostrarModalEliminar.value = false
+  idAEliminar.value = null
 }
 
 
-function calificarServicio(servicio) {
-  const calificacion = prompt(
-    'Califique el servicio de 1 a 5 estrellas:'
-  )
+function abrirModalCalificar(servicio) {
+  servicioCalificando.value = servicio
+  calificacionSeleccionada.value = 0
+  mostrarModalCalificar.value = true
+}
 
-  if (calificacion === null) {
+function seleccionarEstrella(numero) {
+  calificacionSeleccionada.value = numero
+}
+
+function confirmarCalificacion() {
+  if (calificacionSeleccionada.value === 0) {
     return
   }
 
-  const numero = Number(calificacion)
+  servicioCalificando.value.calificacion = calificacionSeleccionada.value
+  cerrarModalCalificar()
+}
 
-  if (numero < 1 || numero > 5 || !Number.isInteger(numero)) {
-    alert('La calificación debe ser un número entre 1 y 5.')
-    return
-  }
-
-  servicio.calificacion = numero
+function cerrarModalCalificar() {
+  mostrarModalCalificar.value = false
+  servicioCalificando.value = null
+  calificacionSeleccionada.value = 0
 }
 
 
@@ -326,6 +334,25 @@ function mostrarEstrellas(calificacion) {
   }
 
   return estrellas
+}
+
+function formatearHora(hora) {
+  if (!hora) {
+    return ''
+  }
+
+  const [horaStr, minutoStr] = hora.split(':')
+  let horas = Number(horaStr)
+  const minutos = minutoStr
+
+  const sufijo = horas >= 12 ? 'PM' : 'AM'
+
+  horas = horas % 12
+  if (horas === 0) {
+    horas = 12
+  }
+
+  return `${horas}:${minutos} ${sufijo}`
 }
 
 function iconoPago(metodo) {
@@ -362,18 +389,31 @@ function claseCalificacion(calificacion) {
 
     <header class="encabezado">
       <div>
-        <h1>✂️ Barbería Don Ramiro</h1>
-        <p>Registro de servicios</p>
+        <p>Registro de servicios  </p>
+        <h1> ✂️ Barbería Don Ramiro</h1>
+        
+        
       </div>
+       
 
-      <button
-        class="boton-nuevo"
-        @click="abrirModal"
-      >
-        + Nuevo servicio
-      </button>
+      <div class="boton-con-texto">
+
+        <button
+          class="boton-nuevo"
+          @click="abrirModal"
+        >
+          + Nuevo servicio
+        </button>
+
+        <p>agenda tu servicio para poder 
+          tener el gusto de atenderte</p>
+
+      </div>
+      
+      
     </header>
-
+    
+   
     <section class="informacion">
 
       <div class="tarjeta-info">
@@ -479,7 +519,7 @@ function claseCalificacion(calificacion) {
 
             <div class="dato">
               <span>🕐 Hora</span>
-              <strong>{{ servicio.hora }}</strong>
+              <strong>{{ formatearHora(servicio.hora) }}</strong>
             </div>
 
             <div class="dato">
@@ -560,14 +600,14 @@ function claseCalificacion(calificacion) {
               <button
                 v-if="servicio.calificacion === '' || servicio.calificacion === null"
                 class="boton-calificar"
-                @click="calificarServicio(servicio)"
+                @click="abrirModalCalificar(servicio)"
               >
                 ⭐ Calificar
               </button>
 
               <button
                 class="boton-eliminar"
-                @click="eliminarServicio(servicio.id)"
+                @click="abrirModalEliminar(servicio.id)"
               >
                 🗑️ Eliminar
               </button>
@@ -595,7 +635,7 @@ function claseCalificacion(calificacion) {
             </h2>
 
             <h2 v-else>
-              ✂️ Nuevo servicio
+              💈✂️ Nuevo servicio
             </h2>
 
             <p>
@@ -613,15 +653,10 @@ function claseCalificacion(calificacion) {
         </div>
 
         <div
-          v-if="error.length > 0"
+          v-if="error"
           class="mensaje-error"
         >
-          <div
-            v-for="(mensaje, index) in error"
-            :key="index"
-          >
-            ⚠️ {{ mensaje }}
-          </div>
+          ⚠️ {{ error }}
         </div>
 
         <form @submit.prevent="guardarServicio">
@@ -634,8 +669,9 @@ function claseCalificacion(calificacion) {
               <input
                 v-model="formulario.nombre"
                 type="text"
-                placeholder="Ej: Juan Pérez"
+                placeholder="Ej: Ronaldo Rincon"
                 :class="{ 'campo-error': campoInvalido('nombre') }"
+                @input="formulario.nombre = formulario.nombre.replace(/[0-9]/g, '')"
               >
             </div>
 
@@ -697,12 +733,12 @@ function claseCalificacion(calificacion) {
             <div class="campo">
               <label>Fecha *</label>
 
-             <input
-              v-model="formulario.fecha"
-              type="date"
-              :min="fechaMinima"
-              :class="{ 'campo-error': campoInvalido('fecha') }"
-            >
+              <input
+                v-model="formulario.fecha"
+                type="date"
+                :min="fechaMinima"
+                :class="{ 'campo-error': campoInvalido('fecha') }"
+              >
             </div>
 
             <div class="campo">
@@ -711,7 +747,7 @@ function claseCalificacion(calificacion) {
               <input
                 v-model="formulario.hora"
                 type="time"
-                min="06:00"
+                :min="horaMinima"
                 max="20:00"
                 :class="{ 'campo-error': campoInvalido('hora') }"
               >
@@ -724,8 +760,9 @@ function claseCalificacion(calificacion) {
                 v-model="formulario.precio"
                 type="number"
                 min="1"
-                placeholder="Ej: 20000"
-                :class="{ 'campo-error': campoInvalido('precio') }"
+               
+                readonly
+                
               >
             </div>
 
@@ -810,6 +847,109 @@ function claseCalificacion(calificacion) {
 
     </div>
 
+    <!-- Modal de calificación -->
+    <div
+      v-show="mostrarModalCalificar"
+      class="modal-fondo"
+    >
+      <div class="modal modal-pequeno">
+
+        <div class="modal-cabecera">
+          <div>
+            <h2>⭐ Calificar servicio</h2>
+            <p v-if="servicioCalificando">
+              {{ servicioCalificando.nombre }} - {{ servicioCalificando.servicio }}
+            </p>
+          </div>
+
+          <button
+            class="cerrar"
+            @click="cerrarModalCalificar"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="estrellas-seleccion">
+          <button
+            v-for="n in 5"
+            :key="n"
+            type="button"
+            class="boton-estrella"
+            @click="seleccionarEstrella(n)"
+          >
+            <span v-if="n <= calificacionSeleccionada">★</span>
+            <span v-else>☆</span>
+          </button>
+        </div>
+
+        <div class="botones-formulario">
+          <button
+            type="button"
+            class="boton-cancelar"
+            @click="cerrarModalCalificar"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            class="boton-guardar"
+            @click="confirmarCalificacion"
+          >
+            Confirmar
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Modal de eliminación -->
+    <div
+      v-show="mostrarModalEliminar"
+      class="modal-fondo"
+    >
+      <div class="modal modal-pequeno">
+
+        <div class="modal-cabecera">
+          <div>
+            <h2>🗑️ Eliminar servicio</h2>
+            <p>Esta acción no se puede deshacer</p>
+          </div>
+
+          <button
+            class="cerrar"
+            @click="cerrarModalEliminar"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="mensaje-confirmacion">
+          ¿Está seguro de que desea eliminar este servicio?
+        </div>
+
+        <div class="botones-formulario">
+          <button
+            type="button"
+            class="boton-cancelar"
+            @click="cerrarModalEliminar"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            class="boton-eliminar-confirmar"
+            @click="confirmarEliminacion"
+          >
+            Sí, eliminar
+          </button>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -846,33 +986,56 @@ button {
 
 
 .encabezado {
-  background-image:
-    linear-gradient(rgba(5, 5, 5, 0.26), rgba(5, 5, 5, 0.72)),
-    url('./img/image.png');
-  background-size: cover;
-  background-position: center;
-  height: 500px;
-  color: #EFE7D8;
-  padding: 28px 2%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  border-bottom: 4px solid #9C6B2E;
+
+background-image: url('./img/image.png');
+background-size: 50% 120%;
+background-position: center;
+background-repeat: no-repeat;
+width: 100%;
+height: 160px;
+background-color: #0f0a06ee;
+border-bottom: 5px solid rgb(228, 157, 5);
+display: flex;
+justify-content: space-between;
+align-items: center;
 }
 
 .encabezado h1 {
   margin: 0;
   font-family: 'Oswald', sans-serif;
-  margin-top: 410px;
-  font-size: 35px;
+  color: white;
+  width: 400px;
+  font-size: 30px;
   text-transform: uppercase;
+  margin-left: 20px;
+  width: 500px;
+ 
 }
 
 .encabezado p {
   margin: 6px 0 0;
   color: #E2D6BE;
   font-size: 14px;
+  margin-left: 18px;
+  text-transform: uppercase;
+ 
+}
+
+.boton-con-texto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 60px;
+  
+}
+
+.boton-con-texto p {
+ 
+  color: #E2D6BE;
+  font-size: 15px;
+  margin-left: 1030px;
+  width: 300px;
+  padding: 10px;
 }
 
 .boton-nuevo {
@@ -882,7 +1045,8 @@ button {
   padding: 13px 20px;
   border-radius: 3px;
   font-size: 14px;
-  margin-top: 380px;
+  margin-left: 1000px;
+
  
  
  
@@ -895,6 +1059,7 @@ button {
   color: #EFE7D8;
   padding: 13px 20px;
   border-radius: 3px;
+
  
 }
 
@@ -944,7 +1109,6 @@ button {
   font-size: 13px;
 }
 
-/* ===== Contenido ===== */
 
 .contenido {
   width: 95%;
@@ -1158,12 +1322,15 @@ button {
   color: #a53c3c;
 }
 
-/* ===== Modal (estilo boleto) ===== */
+
+
+
+
 
 .modal-fondo {
   position: fixed;
   inset: 0;
-  background: rgba(20, 16, 12, 0.72);
+  background: rgba(75, 74, 73, 0.72);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1191,9 +1358,9 @@ button {
   align-items: flex-start;
   padding: 20px 25px 18px;
   margin-bottom: 20px;
-  background: #686868;
-  color: #EFE7D8;
-  border-bottom: 3px solid #071ac7a8;
+  background: #0f0f0f;
+  color: #df7e10;
+  border-bottom: 5px solid #fa9b0c;
 }
 
 .modal-cabecera h2 {
@@ -1220,9 +1387,9 @@ button {
 }
 
 .mensaje-error {
-  background: #fbe9e7;
+  background: #fbe9e7d0;
   color: #A23E32;
-  border-left: 3px solid #A23E32;
+  border-left: 3px solid #fc0202;
   padding: 12px;
   margin: 0 25px 18px;
   font-size: 14px;
@@ -1259,19 +1426,19 @@ form {
 .campo textarea {
   width: 100%;
   border: none;
-  border-bottom: 2px solid #3c5fd1;
+  border-bottom: 2px solid hsl(209, 100%, 56%);
   border-radius: 0;
   padding: 10px 4px;
   font-size: 14px;
-  background: rgba(226, 225, 225, 0.726);
-  color: #050505;
+  background: rgba(228, 227, 227, 0.61);
+  color: #0a0a0a;
 }
 
 .campo input:focus,
 .campo select:focus,
 .campo textarea:focus {
   outline: none;
-  border-bottom-color: #f80a0a;
+  border-bottom-color: #0a0a0a;
 }
 
 .campo textarea {
@@ -1322,6 +1489,45 @@ form {
 
 .campo-error:focus {
   border-bottom-color: #e53935 !important;
+}
+
+.modal-pequeno {
+  max-width: 400px;
+}
+
+.estrellas-seleccion {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 30px 25px;
+  font-size: 40px;
+}
+
+.boton-estrella {
+  border: none;
+  background: transparent;
+  color: #d79a27;
+  padding: 0;
+  line-height: 1;
+}
+
+.mensaje-confirmacion {
+  padding: 20px 25px 0;
+  color: #48544E;
+  font-size: 15px;
+}
+
+.boton-eliminar-confirmar {
+  border: none;
+  padding: 12px 18px;
+  border-radius: 3px;
+  font-weight: 600;
+  background: #A23E32;
+  color: white;
+}
+
+.boton-eliminar-confirmar:hover {
+  background: #822f26;
 }
 
 @media (max-width: 800px) {
