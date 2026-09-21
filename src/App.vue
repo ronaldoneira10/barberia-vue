@@ -1050,7 +1050,7 @@ function eliminarServicioCatalogo(nombre) {
     </div>
 
   
-    
+
     <div v-show="mostrarModal" class="modal-fondo">
       <div class="modal">
 
@@ -1064,7 +1064,7 @@ function eliminarServicioCatalogo(nombre) {
           <button class="cerrar" @click="cerrarModal">×</button>
         </div>
 
-        <div v-if="error" class="mensaje-error">
+        <div v-if="error && campoConError !== 'hora'" class="mensaje-error">
           ⚠️ {{ error }}
         </div>
 
@@ -1141,13 +1141,19 @@ function eliminarServicioCatalogo(nombre) {
 
             <div class="campo">
               <label>Hora *</label>
+
               <input
                 v-model="formulario.hora"
                 type="time"
-                :min="horaMinima"
-                max="20:00"
                 :class="{ 'campo-error': campoInvalido('hora') }"
               >
+
+              <small
+                v-if="campoInvalido('hora') && error"
+                class="error-hora"
+              >
+                {{ error }}
+              </small>
             </div>
 
             <div class="campo">
@@ -1460,6 +1466,14 @@ button {
 .app {
   width: 100%;
   text-align: left;
+}
+
+
+.error-hora {
+  color: #e53935;
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: -2px;
 }
 
 .encabezado {
