@@ -549,6 +549,27 @@ const todosLosServicios = computed(() => [
   ...serviciosArchivados.value
 ])
 
+const serviciosArchivadosOrdenados = computed(() => {
+  const copia = [...serviciosArchivados.value]
+
+  copia.sort((a, b) => {
+    const fechaA = `${a.fecha || ''} ${a.hora || ''}`
+    const fechaB = `${b.fecha || ''} ${b.hora || ''}`
+
+    if (fechaA < fechaB) return 1
+    if (fechaA > fechaB) return -1
+    return 0
+  })
+
+  return copia
+})
+
+const totalArchivado = computed(() =>
+  serviciosArchivados.value.reduce((total, servicio) => {
+    return total + totalCobrado(servicio)
+  }, 0)
+)
+
 const serviciosDeHoy = computed(() =>
   servicios.value.filter(servicio => servicio.fecha === fechaHoy())
 )
@@ -681,7 +702,8 @@ function archivarServiciosDelDia() {
   delDia.forEach(servicio => {
     serviciosArchivados.value.push({
       ...servicio,
-      archivado: true
+      archivado: true,
+      fechaArchivado: fechaHoy()
     })
   })
 
@@ -1050,6 +1072,57 @@ function eliminarServicioCatalogo(nombre) {
     </div>
 
   
+
+    <section class="panel-archivados">
+      <div class="cabecera-archivados">
+        <div>
+          <h2>📦 Cortes archivados</h2>
+          <p>Servicios guardados después de cerrar la caja.</p>
+        </div>
+
+        <div class="resumen-archivados">
+          <strong>{{ serviciosArchivados.length }}</strong>
+          <span>servicios</span>
+          <b>${{ dinero(totalArchivado) }}</b>
+        </div>
+      </div>
+
+      <div v-if="serviciosArchivadosOrdenados.length === 0" class="sin-archivados">
+        📭 Todavía no hay cortes archivados.
+      </div>
+
+      <div v-else class="lista-archivados">
+        <article
+          v-for="servicio in serviciosArchivadosOrdenados"
+          :key="`archivado-${servicio.id}-${servicio.fechaArchivado || servicio.fecha}`"
+          class="tarjeta-archivado"
+        >
+          <div class="cabecera-tarjeta-archivada">
+            <div>
+              <h3>{{ servicio.nombre }}</h3>
+              <p>{{ textoServicios(servicio.servicios) }}</p>
+            </div>
+
+            <span class="etiqueta-archivado">Archivado</span>
+          </div>
+
+          <div class="datos-archivado">
+            <span>💈 {{ servicio.barbero }}</span>
+            <span>📅 {{ servicio.fecha }}</span>
+            <span>🕐 {{ formatearHora(servicio.hora) }}</span>
+            <span>💳 {{ servicio.metodoPago }}</span>
+            <strong>${{ dinero(totalCobrado(servicio)) }}</strong>
+          </div>
+
+          <div class="pie-archivado">
+            <span>Estado: {{ servicio.estadoPago }}</span>
+            <span v-if="servicio.fechaArchivado">
+              Cierre: {{ servicio.fechaArchivado }}
+            </span>
+          </div>
+        </article>
+      </div>
+    </section>
 
     <div v-show="mostrarModal" class="modal-fondo">
       <div class="modal">
@@ -2363,6 +2436,130 @@ form {
   border-radius: 7px;
 }
 
+
+
+.panel-archivados {
+  background: white;
+  border-radius: 12px;
+  padding: 22px;
+  margin: 25px 0;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+}
+
+.cabecera-archivados {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 18px;
+}
+
+.cabecera-archivados h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.cabecera-archivados p {
+  margin: 6px 0 0;
+  color: #777;
+}
+
+.resumen-archivados {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  background: #f7f4f0;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.resumen-archivados strong {
+  font-size: 22px;
+}
+
+.resumen-archivados span {
+  font-size: 12px;
+  color: #777;
+}
+
+.resumen-archivados b {
+  color: #9c6b2e;
+}
+
+.sin-archivados {
+  text-align: center;
+  padding: 25px;
+  background: #f7f4f0;
+  border-radius: 8px;
+  color: #777;
+}
+
+.lista-archivados {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.tarjeta-archivado {
+  border: 1px solid #e4d8c8;
+  border-radius: 10px;
+  padding: 15px;
+  background: #fffdf9;
+}
+
+.cabecera-tarjeta-archivada {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  border-bottom: 1px solid #eee3d5;
+  padding-bottom: 10px;
+}
+
+.cabecera-tarjeta-archivada h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.cabecera-tarjeta-archivada p {
+  margin: 5px 0 0;
+  color: #777;
+  font-size: 13px;
+}
+
+.etiqueta-archivado {
+  background: #e8f3e8;
+  color: #397343;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.datos-archivado {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px 0;
+  font-size: 13px;
+}
+
+.datos-archivado strong {
+  color: #9c6b2e;
+  font-size: 17px;
+}
+
+.pie-archivado {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #777;
+  border-top: 1px solid #eee3d5;
+  padding-top: 10px;
+}
+
 .resumen-caja {
   display: flex;
   flex-direction: column;
@@ -2389,12 +2586,22 @@ form {
 
 @media (max-width: 800px) {
   .lista-deudas,
-  .comisiones-grid {
+  .comisiones-grid,
+  .lista-archivados {
     grid-template-columns: 1fr;
   }
 
   .herramientas {
     flex-direction: column;
+  }
+
+  .cabecera-archivados {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .resumen-archivados {
+    align-items: flex-start;
   }
 }
 
