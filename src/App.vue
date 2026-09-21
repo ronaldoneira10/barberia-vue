@@ -1049,7 +1049,8 @@ function eliminarServicioCatalogo(nombre) {
       </div>
     </div>
 
-    <!-- Modal principal -->
+  
+    
     <div v-show="mostrarModal" class="modal-fondo">
       <div class="modal">
 
@@ -1235,7 +1236,8 @@ function eliminarServicioCatalogo(nombre) {
       </div>
     </div>
 
-    <!-- Historial por cliente -->
+
+
     <div v-show="mostrarModalHistorial" class="modal-fondo">
       <div class="modal modal-pequeno">
         <div class="modal-cabecera">
@@ -1261,7 +1263,8 @@ function eliminarServicioCatalogo(nombre) {
       </div>
     </div>
 
-    <!-- Catálogo editable -->
+
+
     <div v-show="mostrarModalCatalogo" class="modal-fondo">
       <div class="modal">
         <div class="modal-cabecera">
@@ -2226,7 +2229,7 @@ form {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 3px solid #9C6B2E;
+  border-bottom: 3px solid #e6932f;
   padding: 10px 5px;
   margin-top: 15px;
 }
